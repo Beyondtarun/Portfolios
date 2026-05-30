@@ -16,7 +16,7 @@ python -m http.server 8000
 **Portfolios**
 
 - **Tarun Goyal (Main Portfolio):** `tarun-goyal-portfolio.html` — a full visual portfolio with sections for projects, skills, and contact information. View: [tarun-goyal-portfolio.html](tarun-goyal-portfolio.html#L1)
-- **Public URL:** https://beyondtarun.com/Portfolios — hosts the non-CLI (visual) portfolio.
+- **Public URL:** https://beyondtarun.com/Portfolio — hosts the non-CLI (visual) portfolio.
 - **Tarun CLI Portfolio (CLI-focused):** `tarun-cli-portfolio.html` — a lightweight, terminal-style presentation highlighting command-line tools and scripting projects. View: [tarun-cli-portfolio.html](tarun-cli-portfolio.html#L1)
 
 **Usage & Notes**
@@ -34,4 +34,4 @@ python -m http.server 8000
 
 ---
 - **API USED** https://countapi.mileshilliard.com/api/v1/set/beyondtarun_portfolio-views?value=) 
-_README generated and added descriptions for both portfolio pages._
+
