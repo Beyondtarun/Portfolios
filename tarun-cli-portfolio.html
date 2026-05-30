@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Tarun Goyal — CLI Portfolio</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --bg:#0d0d0d;
+  --bg2:#111;
+  --green:#00ff41;
+  --green2:#00cc33;
+  --green-dim:#00ff4133;
+  --cyan:#00d4ff;
+  --yellow:#ffdd00;
+  --red:#ff4444;
+  --white:#e0e0e0;
+  --grey:#666;
+  --grey2:#333;
+  --font:'JetBrains Mono',monospace;
+}
+html,body{height:100%;background:var(--bg);color:var(--green);font-family:var(--font);overflow:hidden;}
+
+/* CRT effect */
+/*body::before{
+  content:"";position:fixed;inset:0;z-index:9999;pointer-events:none;
+  background:repeating-linear-gradient(0deg,rgba(0,0,0,.15) 0px,rgba(0,0,0,.15) 1px,transparent 1px,transparent 2px);
+}*/
+body::after{
+  content:"";position:fixed;inset:0;z-index:9998;pointer-events:none;
+  background:radial-gradient(ellipse at center,transparent 60%,rgba(0,0,0,.7) 100%);
+}
+
+/* Terminal window */
+#terminal{
+  width:100%;height:100vh;
+  display:flex;flex-direction:column;
+  position:relative;
+}
+
+/* Title bar */
+.title-bar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.5rem 1rem;
+  background:#1a1a1a;
+  border-bottom:1px solid #222;
+  flex-shrink:0;
+}
+.title-bar-dots{display:flex;gap:.5rem;}
+.dot{width:12px;height:12px;border-radius:50%;}
+.dot.red{background:#ff5f57;}
+.dot.yellow{background:#febc2e;}
+.dot.green{background:#28c840;}
+.title-bar-title{
+  font-size:.75rem;color:#666;letter-spacing:.1em;
+  position:absolute;left:50%;transform:translateX(-50%);
+}
+.title-bar-info{font-size:.7rem;color:#444;}
+
+/* Output area */
+#output{
+  flex:1;overflow-y:auto;overflow-x:hidden;
+  padding:1rem 1.5rem;
+  line-height:1.7;
+  font-size:.85rem;
+}
+#output::-webkit-scrollbar{width:4px;}
+#output::-webkit-scrollbar-track{background:transparent;}
+#output::-webkit-scrollbar-thumb{background:#333;border-radius:2px;}
+
+/* Input line */
+.input-area{
+  display:flex;align-items:center;
+  padding:.6rem 1.5rem;
+  border-top:1px solid #1a1a1a;
+  background:#0d0d0d;
+  flex-shrink:0;
+  gap:.5rem;
+}
+.prompt-label{color:var(--green);font-size:.85rem;white-space:nowrap;user-select:none;}
+.prompt-label .user{color:var(--cyan);}
+.prompt-label .at{color:var(--grey);}
+.prompt-label .host{color:var(--green);}
+.prompt-label .sep{color:var(--grey);}
+.prompt-label .path{color:var(--yellow);}
+#input{
+  flex:1;background:transparent;border:none;outline:none;
+  color:var(--white);font-family:var(--font);font-size:.85rem;
+  caret-color:var(--green);
+}
+
+/* Output line types */
+.line{display:block;margin-bottom:.1rem;word-break:break-word;}
+.line.cmd{color:var(--white);}
+.line.cmd .prompt{color:var(--green);margin-right:.5rem;user-select:none;}
+.line.cmd .prompt .u{color:var(--cyan);}
+.line.cmd .prompt .h{color:var(--green);}
+.line.cmd .prompt .p{color:var(--yellow);}
+.line.out{color:var(--white);}
+.line.green{color:var(--green);}
+.line.cyan{color:var(--cyan);}
+.line.yellow{color:var(--yellow);}
+.line.red{color:var(--red);}
+.line.grey{color:var(--grey);}
+.line.blank{height:.4rem;}
+.line.ascii{color:var(--green);font-size:.72rem;line-height:1.3;white-space:pre;}
+.line.section{color:var(--cyan);letter-spacing:.15em;}
+.line.key{color:var(--yellow);}
+
+/* Highlight spans */
+.hl-green{color:var(--green);}
+.hl-cyan{color:var(--cyan);}
+.hl-yellow{color:var(--yellow);}
+.hl-red{color:var(--red);}
+.hl-white{color:var(--white);}
+.hl-grey{color:var(--grey);}
+
+/* Typing cursor */
+.cursor{display:inline-block;width:8px;height:1em;background:var(--green);vertical-align:text-bottom;animation:blink .7s step-end infinite;margin-left:1px;}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0;}}
+
+/* Progress bar */
+.progress-bar{display:inline-block;color:var(--green);}
+.progress-track{color:var(--grey2);}
+
+/* Table */
+.cli-table{border-collapse:collapse;width:100%;margin:.3rem 0;}
+.cli-table td{padding:.15rem 1rem .15rem 0;font-size:.82rem;vertical-align:top;}
+.cli-table td:first-child{color:var(--yellow);white-space:nowrap;min-width:140px;}
+.cli-table td:last-child{color:var(--white);}
+
+/* Tag chips */
+.tag{display:inline-block;border:1px solid var(--green2);color:var(--green);padding:.05rem .4rem;font-size:.7rem;margin:.1rem .2rem .1rem 0;}
+.tag.cyan{border-color:var(--cyan);color:var(--cyan);}
+.tag.yellow{border-color:var(--yellow);color:var(--yellow);}
+
+/* Autocomplete hint */
+.hint{color:#333;font-style:italic;}
+
+/* Help command grid */
+.cmd-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:.3rem;margin:.3rem 0;}
+.cmd-item{display:flex;gap:.6rem;}
+.cmd-item .cmd-name{color:var(--green);min-width:100px;}
+.cmd-item .cmd-desc{color:var(--grey);font-size:.78rem;}
+
+/* Mobile */
+@media(max-width:600px){
+  #output{font-size:.78rem;padding:.8rem 1rem;}
+  .input-area{padding:.5rem 1rem;}
+  #input{font-size:.78rem;}
+  .title-bar-title{display:none;}
+  .cli-table td:first-child{min-width:110px;}
+  .line.ascii{font-size:.55rem;}
+}
+</style>
+</head>
+<body>
+<div id="terminal">
+  <div class="title-bar">
+    <div class="title-bar-dots">
+      <div class="dot red"></div>
+      <div class="dot yellow"></div>
+      <div class="dot green"></div>
+    </div>
+    <div class="title-bar-title">tarun@portfolio: ~</div>
+    <div class="title-bar-info">bash — 80×24</div>
+  </div>
+
+  <div id="output"></div>
+
+  <div class="input-area">
+    <span class="prompt-label">
+      <span class="user">tarun</span><span class="at">@</span><span class="host">portfolio</span><span class="sep">:</span><span class="path">~</span><span class="sep">$</span>
+    </span>
+    <input id="input" type="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" placeholder="type 'help' to get started..."/>
+  </div>
+</div>
+
+<script>
+const out = document.getElementById("output");
+const inp = document.getElementById("input");
+
+// ── DATA ──
+const DATA = {
+  name: "Tarun Anand Goyal",
+  title: "Systems Engineer @ TCS",
+  location: "New Delhi, India",
+  email: "tarunanandgoyal@gmail.com",
+  linkedin: "linkedin.com/in/beyondtarun",
+  github: "github.com/Beyondtarun",
+  website: "beyondtarun.com",
+  summary: "Full-stack engineer & big data specialist building scalable, high-performance solutions. Currently engineering data pipelines for Standard Chartered Bank at TCS, Bangalore.",
+  skills: {
+    languages:   ["Java","JavaScript","Scala","SQL","HTML/CSS","Shell Script"],
+    frameworks:  ["React","Node.js","Express.js","ASP.NET","Apache Spark","Hadoop"],
+    databases:   ["MySQL","SQL Server","MongoDB","HDFS","HiveQL"],
+    bigdata:     ["Apache Hive","Hadoop","Airflow","Control-M","HDFS"],
+    tools:       ["WinScp","Putty","Visual Studio","Git","Control-M"],
+    competencies:["Web Dev","SDLC","Debugging","WebSocket","Agile","Big Data"]
+  },
+  experience: [
+    {
+      role:"Systems Engineer",
+      company:"Tata Consultancy Services",
+      location:"Bangalore",
+      period:"Apr 2025 – Present",
+      stack:["Apache Spark","Hadoop","Scala","Hive","Shell Script","SQL-HQL"],
+      points:[
+        "Engineered big data pipelines for Standard Chartered Bank",
+        "Reduced data transformation times by 25–30% with Spark/Scala",
+        "Tuned HiveQL/SQL for regulatory compliance reporting",
+        "Automated ingestion tasks saving 70% manual effort/week"
+      ]
+    },
+    {
+      role:"Research Associate",
+      company:"Tecnia Institute of Advanced Studies",
+      location:"Delhi",
+      period:"Jan 2025 – Apr 2025",
+      stack:["Research","Academic Writing"],
+      points:["CS & SE research with academic faculty collaboration"]
+    },
+    {
+      role:"Software Developer Intern",
+      company:"Techpro Compsoft Pvt. Ltd.",
+      location:"Noida",
+      period:"Mar 2024 – May 2024",
+      stack:["ASP.NET","C#","MVC","SQL Server","T-SQL","ADO.NET"],
+      points:[
+        "Built EMS features with ASP.NET + C# + ADO.NET",
+        "Delivered 40% time saving & improved user experience"
+      ]
+    }
+  ],
+  education: [
+    {degree:"Masters in Computer Application",uni:"GGSIPU, Delhi",cgpa:"8.89",year:"2024"},
+    {degree:"Bachelors in Computer Application",uni:"GGSIPU, Delhi",cgpa:"8.13",year:"2021"}
+  ],
+  certifications: [
+    {name:"GH-300 Microsoft GitHub Copilot",issuer:"Microsoft · TCS"},
+    {name:"Apache Spark & Scala Certification",issuer:"Edureka · TCS"},
+    {name:"DevOps, Cloud & Agile Foundation",issuer:"IBM · Coursera"},
+    {name:"Core Java",issuer:"Udemy"},
+    {name:"Web Development",issuer:"Internshala"}
+  ],
+  achievements: [
+    {metric:"25–30%", desc:"Reduction in data transformation time"},
+    {metric:"70%",    desc:"Manual effort saved per week via automation"},
+    {metric:"40%",    desc:"Time saved in EMS application"},
+    {metric:"8.89",   desc:"MCA CGPA — top academic performance"}
+  ]
+};
+
+const COMMANDS = {
+  help:     cmdHelp,
+  whoami:   cmdWhoami,
+  about:    cmdAbout,
+  skills:   cmdSkills,
+  exp:      cmdExp,
+  experience: cmdExp,
+  education:  cmdEducation,
+  edu:      cmdEducation,
+  certs:    cmdCerts,
+  certifications: cmdCerts,
+  achievements: cmdAchievements,
+  stats:    cmdAchievements,
+  contact:  cmdContact,
+  social:   cmdContact,
+  ls:       cmdLs,
+  cat:      cmdCat,
+  clear:    cmdClear,
+  cls:      cmdClear,
+  banner:   cmdBanner,
+  ascii:    cmdBanner,
+  pwd:      cmdPwd,
+  date:     cmdDate,
+  echo:     cmdEcho,
+  hi:       cmdHi,
+  hello:    cmdHi,
+  hire:     cmdHire,
+  open:     cmdOpen,
+  resume:   cmdResume,
+  sudo:     cmdSudo,
+  exit:     cmdExit,
+  quit:     cmdExit,
+};
+
+let history = [];
+let histIdx = -1;
+let typeQueue = [];
+let typing = false;
+
+// ── RENDER HELPERS ──
+function line(text="", cls="out"){
+  const el = document.createElement("span");
+  el.className = "line " + cls;
+  el.innerHTML = text;
+  out.appendChild(el);
+  out.scrollTop = out.scrollHeight;
+}
+function blank(){ line("","blank"); }
+function printCmd(cmd){
+  line(`<span class="prompt"><span class="u">tarun</span>@<span class="h">portfolio</span>:<span class="p">~</span>$ </span>${esc(cmd)}`,"cmd");
+}
+function esc(s){ return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+function tag(t,cls=""){ return `<span class="tag ${cls}">${esc(t)}</span>`; }
+function hl(t,c="green"){ return `<span class="hl-${c}">${t}</span>`; }
+
+// Typewriter for a single line
+function typewriterLine(text, cls, speed, callback){
+  const el = document.createElement("span");
+  el.className = "line " + cls;
+  out.appendChild(el);
+  let i = 0;
+  // Strip HTML for typing (render raw)
+  const stripped = text.replace(/<[^>]+>/g,"");
+  function tick(){
+    if(i <= stripped.length){
+      el.textContent = stripped.slice(0,i);
+      i++;
+      out.scrollTop = out.scrollHeight;
+      setTimeout(tick, speed);
+    } else {
+      el.innerHTML = text; // swap in real HTML at end
+      if(callback) callback();
+    }
+  }
+  tick();
+}
+
+// ── COMMANDS ──
+function cmdHelp(){
+  line(`<span class="hl-cyan">Available commands:</span>`);
+  blank();
+  const cmds = [
+    ["whoami",    "who is tarun?"],
+    ["about",     "full profile summary"],
+    ["skills",    "technical skill stack"],
+    ["exp",       "work experience"],
+    ["education", "academic background"],
+    ["certs",     "certifications"],
+    ["stats",     "key achievements & metrics"],
+    ["contact",   "get in touch"],
+    ["ls",        "list all sections"],
+    ["banner",    "show ascii art banner"],
+    ["resume",    "download resume"],
+    ["hire",      "why you should hire me"],
+    ["clear",     "clear terminal"],
+    ["date",      "current date & time"],
+    ["exit",      "close portfolio"],
+  ];
+  cmds.forEach(([c,d])=>{
+    line(`  ${hl(c.padEnd(14),"green")}${hl(d,"grey")}`);
+  });
+  blank();
+  line(`${hl("tip:","yellow")} press ${hl("↑↓","cyan")} for command history, ${hl("Tab","cyan")} to autocomplete`);
+}
+
+function cmdWhoami(){
+  blank();
+  line(`${hl("Tarun Anand Goyal","white")} ${hl("//","grey")} ${hl("Software Developer & Data Engineer","cyan")}`);
+  blank();
+  const rows = [
+    ["role",      DATA.title],
+    ["location",  DATA.location],
+    ["email",     DATA.email],
+    ["website",   DATA.website],
+    ["github",    DATA.github],
+    ["linkedin",  DATA.linkedin],
+  ];
+  const tbl = document.createElement("table");
+  tbl.className = "cli-table";
+  rows.forEach(([k,v])=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${hl(k,"yellow")}</td><td>${hl("→","grey")} ${esc(v)}</td>`;
+    tbl.appendChild(tr);
+  });
+  out.appendChild(tbl);
+  blank();
+}
+
+function cmdAbout(){
+  blank();
+  line(`${hl("##","grey")} ${hl("about tarun","cyan")}`);
+  blank();
+  line(DATA.summary);
+  blank();
+  line(`${hl("currently","yellow")} engineering big data pipelines for ${hl("Standard Chartered Bank","white")} at ${hl("TCS Bangalore","green")}`);
+  blank();
+  line(`${hl("stack","yellow")} → full-stack ${hl("|","grey")} big data ${hl("|","grey")} cloud ${hl("|","grey")} agile`);
+  line(`${hl("langs","yellow")} → ${DATA.skills.languages.map(s=>tag(s)).join(" ")}`);
+  blank();
+}
+
+function cmdSkills(){
+  blank();
+  line(`${hl("##","grey")} ${hl("skill stack","cyan")}`);
+  blank();
+  Object.entries(DATA.skills).forEach(([cat,items])=>{
+    const colors = {languages:"green",frameworks:"cyan",databases:"yellow",bigdata:"green",tools:"cyan",competencies:"yellow"};
+    line(`${hl(("▸ "+cat).padEnd(18),"yellow")}${items.map(s=>tag(s,colors[cat]||"")).join(" ")}`);
+  });
+  blank();
+}
+
+function cmdExp(){
+  blank();
+  line(`${hl("##","grey")} ${hl("work experience","cyan")}`);
+  DATA.experience.forEach((e,i)=>{
+    blank();
+    line(`${hl("["+(i+1)+"]","grey")} ${hl(e.role,"white")} ${hl("@","grey")} ${hl(e.company,"green")}`);
+    line(`    ${hl("location","yellow")} → ${e.location}   ${hl("period","yellow")} → ${hl(e.period,"cyan")}`);
+    line(`    ${hl("stack","yellow")}    → ${e.stack.map(s=>tag(s)).join(" ")}`);
+    e.points.forEach(p=>{
+      line(`    ${hl("▹","green")} ${p}`);
+    });
+  });
+  blank();
+}
+
+function cmdEducation(){
+  blank();
+  line(`${hl("##","grey")} ${hl("education","cyan")}`);
+  blank();
+  DATA.education.forEach((e,i)=>{
+    line(`${hl("["+(i+1)+"]","grey")} ${hl(e.degree,"white")}`);
+    line(`    ${hl("university","yellow")} → ${e.uni}`);
+    line(`    ${hl("cgpa","yellow")}       → ${hl(e.cgpa,"green")}   ${hl("year","yellow")} → ${hl(e.year,"cyan")}`);
+    blank();
+  });
+}
+
+function cmdCerts(){
+  blank();
+  line(`${hl("##","grey")} ${hl("certifications","cyan")}`);
+  blank();
+  DATA.certifications.forEach((c,i)=>{
+    line(`  ${hl(String(i+1).padStart(2,"0")+".", "grey")} ${hl(c.name,"white")} ${hl("—","grey")} ${hl(c.issuer,"cyan")}`);
+  });
+  blank();
+}
+
+function cmdAchievements(){
+  blank();
+  line(`${hl("##","grey")} ${hl("key metrics","cyan")}`);
+  blank();
+  DATA.achievements.forEach(a=>{
+    // ASCII progress-ish
+    line(`  ${hl(a.metric.padEnd(10),"green")} ${hl("█","green").repeat(8)}  ${a.desc}`);
+  });
+  blank();
+}
+
+function cmdContact(){
+  blank();
+  line(`${hl("##","grey")} ${hl("contact tarun","cyan")}`);
+  blank();
+  line(`  ${hl("email","yellow")}    → ${hl(DATA.email,"white")}`);
+  line(`  ${hl("linkedin","yellow")} → ${hl(DATA.linkedin,"cyan")}`);
+  line(`  ${hl("github","yellow")}   → ${hl(DATA.github,"cyan")}`);
+  line(`  ${hl("website","yellow")}  → ${hl(DATA.website,"green")}`);
+  blank();
+  line(`  ${hl("→","green")} type ${hl("open email","cyan")} to compose a message`);
+  line(`  ${hl("→","green")} type ${hl("open linkedin","cyan")} to visit LinkedIn`);
+  line(`  ${hl("→","green")} type ${hl("open github","cyan")} to visit GitHub`);
+  blank();
+}
+
+function cmdLs(){
+  blank();
+  const sections = ["whoami","about","skills","experience","education","certifications","achievements","contact","resume"];
+  line(`${hl("total","grey")} ${sections.length}`);
+  blank();
+  sections.forEach(s=>{
+    line(`  ${hl("drwxr-xr-x","grey")}  ${hl("tarun","cyan")}  ${hl("portfolio","green")}  ${hl(s+"/","white")}`);
+  });
+  blank();
+}
+
+function cmdCat(args){
+  if(!args){
+    line(`${hl("usage:","yellow")} cat [section]`);
+    line(`${hl("example:","grey")} cat about`);
+    return;
+  }
+  const map = {about:cmdAbout,skills:cmdSkills,experience:cmdExp,exp:cmdExp,education:cmdEducation,certs:cmdCerts,contact:cmdContact};
+  if(map[args]) map[args]();
+  else line(`${hl("cat:","red")} ${args}: No such file or directory`);
+}
+
+function cmdClear(){
+  out.innerHTML = "";
+}
+
+function cmdBanner(){
+  blank();
+  const ascii = [
+    " ████████╗ ██████╗ ",
+    "    ██╔══╝██╔════╝ ",
+    "    ██║   ██║  ███╗",
+    "    ██║   ██║   ██║",
+    "    ██║   ╚██████╔╝",
+    "    ╚═╝    ╚═════╝ ",
+  ];
+  ascii.forEach(l=>{ line(l,"ascii"); });
+  blank();
+  line(`  ${hl("Tarun Anand Goyal","white")} ${hl("//","grey")} ${hl("Software Developer","green")}`);
+  line(`  ${hl("Systems Engineer @ TCS · New Delhi, India","cyan")}`);
+  blank();
+  line(`  ${hl("\"","grey")}Building pipelines that process millions of records${hl("\"","grey")}`);
+  blank();
+}
+
+function cmdPwd(){
+  line(`/home/tarun/portfolio`);
+}
+
+function cmdDate(){
+  line(new Date().toString());
+}
+
+function cmdEcho(args){
+  line(args ? esc(args) : "");
+}
+
+function cmdHi(){
+  blank();
+  line(`${hl("Hey!","green")} 👋 Welcome to Tarun's CLI Portfolio`);
+  line(`Type ${hl("help","cyan")} to see what you can explore.`);
+  blank();
+}
+
+function cmdHire(){
+  blank();
+  line(`${hl("##","grey")} ${hl("why hire tarun?","cyan")}`);
+  blank();
+  const reasons = [
+    ["impact",    "25-30% faster pipelines, 70% less manual work — real numbers"],
+    ["range",     "full-stack + big data — rare combo in one engineer"],
+    ["academic",  "8.89 MCA CGPA — proven ability to learn fast"],
+    ["stack",     "Spark, Scala, Hadoop, React, Java, SQL — production-ready"],
+    ["mindset",   "automates the boring, focuses on what matters"],
+    ["certified", "Microsoft GitHub Copilot, IBM DevOps, Edureka Spark"],
+  ];
+  reasons.forEach(([k,v])=>{
+    line(`  ${hl("✓","green")} ${hl(k.padEnd(12),"yellow")} ${v}`);
+  });
+  blank();
+  line(`  ${hl("→","green")} Interested? type ${hl("open email","cyan")} or ${hl("contact","cyan")}`);
+  blank();
+}
+
+function cmdResume(){
+  blank();
+  line(`${hl("downloading","green")} Tarun_Anand_Goyal_Resume.pdf...`);
+  setTimeout(()=>{
+    line(`${hl("[████████████████████]","green")} ${hl("100%","white")} done`);
+    blank();
+    line(`${hl("→","green")} opening: ${hl("beyondtarun.com/wp-content/uploads/2026/05/Tarun-Goyal-SE.pdf","cyan")}`);
+    blank();
+    window.open("https://beyondtarun.com/wp-content/uploads/2026/05/Tarun-Goyal-SE.pdf","_blank");
+    out.scrollTop = out.scrollHeight;
+  }, 800);
+}
+
+function cmdOpen(args){
+  if(!args){ line(`${hl("usage:","yellow")} open [email|linkedin|github|website]`); return; }
+  const targets = {
+    email:    ()=>{ window.location.href="mailto:tarunanandgoyal@gmail.com"; line(`${hl("→","green")} opening mail client...`); },
+    linkedin: ()=>{ window.open("https://www.linkedin.com/in/beyondtarun/","_blank"); line(`${hl("→","green")} opening LinkedIn...`); },
+    github:   ()=>{ window.open("https://github.com/Beyondtarun","_blank"); line(`${hl("→","green")} opening GitHub...`); },
+    website:  ()=>{ window.open("https://beyondtarun.com","_blank"); line(`${hl("→","green")} opening website...`); },
+    resume:   ()=>{ cmdResume(); return; },
+  };
+  if(targets[args.toLowerCase()]) targets[args.toLowerCase()]();
+  else line(`${hl("open:","red")} unknown target '${esc(args)}' — try: email, linkedin, github, website, resume`);
+}
+
+function cmdSudo(args){
+  blank();
+  line(`${hl("[sudo]","red")} password for tarun: `);
+  setTimeout(()=>{
+    line(`${hl("tarun","cyan")} is not in the sudoers file. This incident will be reported.`);
+    blank();
+  },600);
+}
+
+function cmdExit(){
+  blank();
+  line(`${hl("logout","green")}`);
+  line(`${hl("Thanks for visiting! — Tarun Goyal","cyan")}`);
+  blank();
+  setTimeout(()=>{
+    document.body.style.transition="opacity 1.5s";
+    document.body.style.opacity="0";
+    setTimeout(()=>{ window.location.href="https://beyondtarun.com"; },1500);
+  },1000);
+}
+
+// ── COMMAND RUNNER ──
+function run(raw){
+  const trimmed = raw.trim();
+  if(!trimmed) return;
+
+  history.unshift(trimmed);
+  histIdx = -1;
+
+  printCmd(trimmed);
+
+  const [cmd, ...argParts] = trimmed.split(" ");
+  const args = argParts.join(" ").trim();
+  const fn = COMMANDS[cmd.toLowerCase()];
+
+  if(fn) fn(args || null);
+  else{
+    line(`${hl("bash:","red")} command not found: ${hl(esc(cmd),"white")} — type ${hl("help","cyan")} for commands`);
+  }
+  blank();
+  out.scrollTop = out.scrollHeight;
+}
+
+// ── INPUT HANDLER ──
+inp.addEventListener("keydown", e=>{
+  if(e.key === "Enter"){
+    const val = inp.value;
+    inp.value = "";
+    run(val);
+  }
+  else if(e.key === "ArrowUp"){
+    e.preventDefault();
+    if(histIdx < history.length-1){ histIdx++; inp.value = history[histIdx]; }
+  }
+  else if(e.key === "ArrowDown"){
+    e.preventDefault();
+    if(histIdx > 0){ histIdx--; inp.value = history[histIdx]; }
+    else { histIdx = -1; inp.value = ""; }
+  }
+  else if(e.key === "Tab"){
+    e.preventDefault();
+    const val = inp.value.trim().toLowerCase();
+    if(!val) return;
+    const match = Object.keys(COMMANDS).find(c=>c.startsWith(val));
+    if(match) inp.value = match;
+  }
+  else if(e.key === "l" && e.ctrlKey){
+    e.preventDefault();
+    cmdClear();
+  }
+});
+
+// Always focus input on click anywhere
+document.addEventListener("click", ()=> inp.focus());
+document.addEventListener("touchend", ()=> inp.focus());
+
+// ── BOOT SEQUENCE ──
+function boot(){
+  const bootLines = [
+    {t:`${hl("BIOS","green")} v2.4.1 — Tarun Portfolio System`, d:0},
+    {t:`${hl("CPU","yellow")} Intel Core i7 — ${hl("OK","green")}`, d:100},
+    {t:`${hl("MEM","yellow")} 16384MB RAM — ${hl("OK","green")}`, d:180},
+    {t:`${hl("DISK","yellow")} Portfolio v1.0 — ${hl("mounted","green")}`, d:260},
+    {t:"", d:340},
+    {t:`Loading ${hl("beyondtarun.com","cyan")} portfolio...`, d:380},
+    {t:`${hl("[██████████████████████]","green")} ${hl("100%","white")}`, d:700},
+    {t:"", d:900},
+    {t:`${hl("Welcome to Tarun's CLI Portfolio","white")}`, d:950, cls:"section"},
+    {t:`Type ${hl("help","cyan")} to see available commands or ${hl("banner","cyan")} for intro`, d:1050},
+    {t:"", d:1150},
+  ];
+
+  bootLines.forEach(({t,d,cls})=>{
+    setTimeout(()=>{ line(t, cls||"out"); out.scrollTop=out.scrollHeight; }, d);
+  });
+
+  setTimeout(()=>{
+    cmdBanner();
+    inp.focus();
+  }, 1300);
+}
+
+boot();
+</script>
+</body>
+</html>
